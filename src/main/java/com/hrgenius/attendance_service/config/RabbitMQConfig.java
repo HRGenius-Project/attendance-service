@@ -1,8 +1,9 @@
 package com.hrgenius.attendance_service.config;
 
-import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +17,7 @@ public class RabbitMQConfig {
     private String exchange;
 
     @Value("${app.rabbitmq.queue}")
-    private String queue;
+    private String attendanceQueue;
 
     @Value("${app.rabbitmq.routing-key-in}")
     private String routingKeyIn;
@@ -24,11 +25,11 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key-out}")
     private String routingKeyOut;
 
-    @Bean
-    public Queue attendanceQueue() {
-        // durable = true (server restart hone par message delete nahi hoga)
-        return new Queue(queue, true);
-    }
+    @Value("${app.rabbitmq.leave-queue}")
+    private String leaveQueue;
+
+    @Value("${app.rabbitmq.routing-key-leave}")
+    private String routingKeyLeave;
 
     @Bean
     public TopicExchange attendanceExchange() {
@@ -36,19 +37,32 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue attendanceQueue() {
+        return new Queue(attendanceQueue, true);
+    }
+
+    @Bean
+    public Queue attendanceLeaveQueue() {
+        return new Queue(leaveQueue, true);
+    }
+
+    @Bean
     public Binding bindingPunchIn(Queue attendanceQueue, TopicExchange attendanceExchange) {
-        return BindingBuilder.bind(attendanceQueue).to(attendanceExchange).with("attendance.punch.*");
+        return BindingBuilder.bind(attendanceQueue).to(attendanceExchange).with(routingKeyIn);
+    }
+
+    @Bean
+    public Binding bindingPunchOut(Queue attendanceQueue, TopicExchange attendanceExchange) {
+        return BindingBuilder.bind(attendanceQueue).to(attendanceExchange).with(routingKeyOut);
+    }
+
+    @Bean
+    public Binding bindingLeaveApproved(Queue attendanceLeaveQueue, TopicExchange attendanceExchange) {
+        return BindingBuilder.bind(attendanceLeaveQueue).to(attendanceExchange).with(routingKeyLeave);
     }
 
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
-    }
-
-    @Bean
-    public AmqpTemplate amqpTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter());
-        return rabbitTemplate;
     }
 }
