@@ -1,14 +1,17 @@
+
 server:
   port: 8093
 
 spring:
   application:
     name: attendance-service
+
   datasource:
     url: jdbc:mysql://localhost:3307/hrgenius_attendance?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:Root@12345}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,6 +20,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -34,5 +38,7 @@ app:
   rabbitmq:
     exchange: hrgenius.exchange
     queue: attendance.queue
-    routing-key-in: attendance.punch-in
-    routing-key-out: attendance.punch-out
+    routing-key-in: attendance.punch.in
+    routing-key-out: attendance.punch.out
+    leave-queue: attendance.leave.queue
+    routing-key-leave: leave.approved
